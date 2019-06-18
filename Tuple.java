@@ -11,17 +11,26 @@ import java.util.HashMap;
  */
 public class Tuple {
 	
+	private TupleDesc schema;
+	private int npid;
+	private Field[] nfields;
+	private int ntid;
 	/**
 	 * Creates a new tuple with the given description
 	 * @param t the schema for this tuple
 	 */
 	public Tuple(TupleDesc t) {
+		assert(t instanceof TupleDesc);
+		assert(t.numFields()>0);
+		this.schema=t;
+		this.nfields=new Field[t.numFields()];
 		//your code here
 	}
 	
 	public TupleDesc getDesc() {
+		
 		//your code here
-		return null;
+		return schema;
 	}
 	
 	/**
@@ -30,11 +39,13 @@ public class Tuple {
 	 */
 	public int getPid() {
 		//your code here
-		return 0;
+		
+		return npid;
 	}
 
 	public void setPid(int pid) {
 		//your code here
+		npid=pid;
 	}
 
 	/**
@@ -42,16 +53,19 @@ public class Tuple {
 	 * @return the slot where this tuple is stored
 	 */
 	public int getId() {
-		//your code here
-		return 0;
+		//your code here	
+		return ntid;
 	}
 
 	public void setId(int id) {
 		//your code here
+		ntid=id;
 	}
 	
 	public void setDesc(TupleDesc td) {
+		this.schema = td;
 		//your code here;
+		
 	}
 	
 	/**
@@ -61,11 +75,16 @@ public class Tuple {
 	 */
 	public void setField(int i, Field v) {
 		//your code here
+		assert(i<=nfields.length);
+		assert(i>=0);
+		nfields[i]=v;
 	}
 	
 	public Field getField(int i) {
 		//your code here
-		return null;
+		assert(i>=0);
+		assert(i<=nfields.length);
+		return nfields[i];
 	}
 	
 	/**
@@ -74,8 +93,13 @@ public class Tuple {
 	 * the String columns to readable text).
 	 */
 	public String toString() {
+		StringBuffer temp = new StringBuffer();
+		for (int i = 0; i<nfields.length; i++) {
+			temp = temp.append(nfields[i].toString() + "\n");
+		}
 		//your code here
-		return "";
+		
+		return temp.toString();
 	}
 }
 	

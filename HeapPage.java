@@ -6,8 +6,11 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+
+import hw4.Permissions;
 
 public class HeapPage {
 
@@ -17,12 +20,14 @@ public class HeapPage {
 	private TupleDesc td;
 	private int numSlots;
 	private int tableId;
+	private boolean dirty;
 
 
 
 	public HeapPage(int id, byte[] data, int tableId) throws IOException {
 		this.id = id;
 		this.tableId = tableId;
+		this.dirty=false;
 
 		this.td = Database.getCatalog().getTupleDesc(this.tableId);
 		this.numSlots = getNumSlots();
@@ -46,7 +51,11 @@ public class HeapPage {
 
 	public int getId() {
 		//your code here
-		return 0;
+		return id;
+	}
+	
+	public int getTableId() {
+		return tableId;
 	}
 
 	/**
@@ -56,16 +65,48 @@ public class HeapPage {
 	 */
 	public int getNumSlots() {
 		//your code here
-		return 0;
+		return (HeapFile.PAGE_SIZE*8)/((td.getSize()*8)+1);
 	}
 
 	/**
 	 * Computes the size of the header. Headers must be a whole number of bytes (no partial bytes)
 	 * @return size of header in bytes
 	 */
+	
+	public boolean isDirty() {
+		return this.dirty;
+	}
+	
+	public void setDirty(boolean d) {
+		this.dirty=d;
+	}
+	
+	public Tuple[] getTuples() {        
+		//your code here
+		return tuples;
+	}
+	
 	private int getHeaderSize() {        
 		//your code here
-		return 0;
+		return (getNumSlots()+7)/8;
+	}
+	
+	public int getNumberOfEmptySlots() {
+		int numberOfEmptySlots = 0;
+		for(int i = 0; i < getNumSlots(); i++) {
+			
+			if((header[i/8] >> i%8 & 1)==0) {
+				numberOfEmptySlots++;
+			}
+		
+			int eSlotPos = i / 8;
+			int elementsInSlotPos = i % 8;
+			if((header[eSlotPos] & (1 << elementsInSlotPos)) == 0) {
+				numberOfEmptySlots ++;
+			}
+			
+		}
+		return numberOfEmptySlots;
 	}
 
 	/**
@@ -74,6 +115,9 @@ public class HeapPage {
 	 * @return true if occupied
 	 */
 	public boolean slotOccupied(int s) {
+		if((header[s/8] >> s%8 & 1)==1) {
+			return true;
+		}
 		//your code here
 		return false;
 	}
@@ -84,7 +128,12 @@ public class HeapPage {
 	 * @param value its occupied status
 	 */
 	public void setSlotOccupied(int s, boolean value) {
-		//your code here
+		if (value) {
+			header[s/8] = (byte) (header[s/8] | (1 << (s%8)));
+		}
+		else {
+			header[s/8] = (byte) (header[s/8] & ~(1 << (s%8)));
+		}
 	}
 	
 	/**
@@ -94,6 +143,19 @@ public class HeapPage {
 	 * @throws Exception
 	 */
 	public void addTuple(Tuple t) throws Exception {
+		int n  = getNumSlots();
+		for (int i=0;i<n;i++) {
+			if (!slotOccupied(i)) {
+				if(t.getDesc().equals(td)) {
+					
+					t.setId(i);
+					t.setPid(getId());
+					tuples[i]=t;
+					setSlotOccupied(i,true);
+					return;
+				}
+			}
+		}
 		//your code here
 	}
 
@@ -104,6 +166,15 @@ public class HeapPage {
 	 * @throws Exception
 	 */
 	public void deleteTuple(Tuple t) {
+		int n  = getNumSlots();
+		for (int i = 0;i<n;i++) {
+			if(slotOccupied(i)) {
+				if(tuples[i].getDesc().equals(t.getDesc()) && t.getPid()==tuples[i].getPid()) {
+					setSlotOccupied(i,false);
+					return;
+				}
+			}
+		}
 		//your code here
 	}
 	
@@ -231,7 +302,32 @@ public class HeapPage {
 	 * @return
 	 */
 	public Iterator<Tuple> iterator() {
+		ArrayList<Tuple> myList = new ArrayList<Tuple>();
+        for (int i = 0; i < numSlots; i ++) {
+            if (slotOccupied(i)) myList.add(tuples[i]);
+        }
+        return myList.iterator();
 		//your code here
-		return null;
+		
+	}
+	
+	public boolean check(Object o) {
+		HeapPage hp = (HeapPage)o;
+		if(hp.id!=this.id || 
+				hp.tableId!=this.tableId || 
+				hp.header!=this.header ||
+				hp.tuples!=this.tuples ||
+				hp.td!=this.td ||
+				hp.numSlots!=this.numSlots ||
+				hp.dirty!=this.dirty) {
+			return false;
+		}
+		
+		return true;
+	}
+	
+	
+	public int hashCode() {
+		return (tableId * 31 + id);
 	}
 }

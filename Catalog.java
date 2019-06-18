@@ -16,24 +16,50 @@ import java.util.*;
 
 public class Catalog {
 	
-    /**
-     * Constructor.
-     * Creates a new, empty catalog.
-     */
+	private class Table {
+        public Table(HeapFile file, String name, String pkeyField) {
+            this.Name = name;
+            this.File = file;
+            this.PkeyField = pkeyField;
+        }
+        public HeapFile getHeapFile() {
+            return this.File;
+        }
+        public String getPkeyField() {
+            return this.PkeyField;
+        }
+        public String getName() {
+            return this.Name;
+        }
+        private String Name;
+        private HeapFile File;        
+        private String PkeyField;
+    }
+	/** define a new class called table which has name , file and pkeyField*/
+	
+	private HashMap<String,Table> NameHash;
+	private HashMap<Integer,Table> IdHash;
+	
     public Catalog() {
+    	this.NameHash = new HashMap<String,Table>();
+    	this.IdHash = new HashMap<Integer, Table>();
     	//your code here
     }
 
     /**
      * Add a new table to the catalog.
      * This table's contents are stored in the specified HeapFile.
-     * @param file the contents of the table to add;  file.getId() is the identfier of
+     * @param file the contents of the table to add;  file.getId() is the identfier o
      *    this file/tupledesc param for the calls getTupleDesc and getFile
      * @param name the name of the table -- may be an empty string.  May not be null.  If a name conflict exists, use the last table to be added as the table for a given name.
      * @param pkeyField the name of the primary key field
      */
     public void addTable(HeapFile file, String name, String pkeyField) {
+    	Table data = new Table(file,name,pkeyField);
+    	this.NameHash.put(name, data);
+    	this.IdHash.put(file.getId(),data);
     	//your code here
+    	
     }
 
     public void addTable(HeapFile file, String name) {
@@ -45,8 +71,16 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) {
+    	Table match = this.NameHash.get(name);
+    	if (match==null) {
+    		throw new NoSuchElementException();
+    	}
+    	else {
+    		HeapFile file =match.getHeapFile();
+    		return file.getId();
+    	}
     	//your code here
-    	return 0;
+    	
     }
 
     /**
@@ -56,7 +90,15 @@ public class Catalog {
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
     	//your code here
-    	return null;
+    	Table match = this.IdHash.get(tableid);
+    	if (match==null) {
+    		throw new NoSuchElementException();
+    	}
+    	else {
+    		HeapFile file = match.getHeapFile();
+    		return file.getTupleDesc();
+    	}
+    	
     }
 
     /**
@@ -67,27 +109,52 @@ public class Catalog {
      */
     public HeapFile getDbFile(int tableid) throws NoSuchElementException {
     	//your code here
-    	return null;
+    	Table match = this.IdHash.get(tableid);
+    	if (match == null) {
+    		throw new NoSuchElementException();
+    	}
+    	else {
+    		return match.getHeapFile();
+    	}
+    	
     }
 
     /** Delete all tables from the catalog */
     public void clear() {
+    	this.IdHash.clear();
+    	this.NameHash.clear();
     	//your code here
     }
 
     public String getPrimaryKey(int tableid) {
+    	Table match = this.IdHash.get(tableid);
+    	if (match == null) {
+    		throw new NoSuchElementException();
+    	}
+    	else {
+    		return match.getPkeyField();
+    	}
     	//your code here
-    	return null;
+    	
     }
 
     public Iterator<Integer> tableIdIterator() {
+    	Set<Integer> keys = this.IdHash.keySet();
+    	return keys.iterator();
     	//your code here
-    	return null;
+    	
     }
 
     public String getTableName(int id) {
+    	Table match = this.IdHash.get(id);
+    	if(match == null) {
+    		throw new NoSuchElementException();
+    	}
+    	else {
+    		return match.getName();
+    	}
     	//your code here
-    	return null;
+    	
     }
     
     /**

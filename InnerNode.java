@@ -9,39 +9,34 @@ public class InnerNode implements Node {
 	protected int degree;
 	protected ArrayList<Node> children;
 	protected ArrayList<Field> Keys;
+	private int size;
 	protected Node parent;
-	protected boolean isroot;
 	
 	
 	
 	public InnerNode(int degree) {
+		this.size=0;
 		this.degree=degree;
-		this.children=new ArrayList<Node>();
-		this.Keys=new ArrayList<Field>();
-		this.parent=null;
-		this.isroot=isroot;
+		this.children=new ArrayList<Node>(degree+1);
+		this.Keys=new ArrayList<Field>(degree);
+		
+		
 		//your code here
 	}
 	
-	public boolean isroot() {
-		return isroot;
-	}
+	
 	
 	public void setChildren(ArrayList<Node> ch) {
 		this.children=ch;
 	}
 	
-	public Node getparent() {
-		return parent;
-	}
+	
 	
 	public void setKeys(ArrayList<Field> keys) {
 		this.Keys=keys;
 	}
 	
-	public void setparent(Node pt) {
-		this.parent=pt;
-	}
+	
 	
 	public ArrayList<Field> getKeys() {
 		//your code here
@@ -52,138 +47,103 @@ public class InnerNode implements Node {
 		//your code here
 		return children;
 	}
-
+	
+	
 	public int getDegree() {
 		//your code here
 		return degree;
 	}
 	
-	public void setisroot(boolean k) {
-		this.isroot=k;
-	}
+	
 	
 	public boolean isLeafNode() {
 		return false;
 	}
 	
-	public void updateinsert(BPlusTree tree) {
-		validate(this,tree);
-		
-		if(this.children.size()>tree.getpi()) {
-			
-			InnerNode left=new InnerNode(0);
-			InnerNode right=new InnerNode(0);
-			int leftsize = (tree.getpi() + 1) / 2 + (tree.getpi() + 1) % 2; 
-			int rightsize = (tree.getpi() + 1) / 2; 
-			for(int i=0;i<leftsize;i++) {
-				left.getChildren().add(this.children.get(i));
-				left.getKeys().add(((InnerNode) this.children.get(i)).getKeys().get(0));
-				((InnerNode)this.children.get(i)).setparent(left);
-			}
-			for(int i=0;i<rightsize;i++) {
-				right.getChildren().add(children.get(leftsize+i));
-				right.getKeys().add(((InnerNode) children.get(leftsize+i)).getKeys().get(0));
-				((InnerNode) this.children.get(leftsize+i)).setparent(right);
-			}
-			
-			if(parent!=null) {
-				int index = ((InnerNode) parent).getChildren().indexOf(this); 
-                ((InnerNode) parent).getChildren().remove(index); 
-                ((InnerNode) left).setparent(parent); 
-                right.setparent(parent); 
-                ((InnerNode) parent).getChildren().add(index,left); 
-                ((InnerNode) parent).getChildren().add(index + 1, right); 
-                this.setKeys(null); 
-                this.setChildren(null); 
-                
-                ((InnerNode) parent).updateinsert(tree);
-                this.setparent(null);
-			}
-			else {
-				isroot = false; 
-				InnerNode parent = new InnerNode(1); 
-				parent.isroot=true;
-				tree.setroot(parent); 
-				left.setparent(parent); 
-				right.setparent(parent); 
-				parent.getChildren().add(left); 
-				parent.getChildren().add(right); 
-				setKeys(null);
-				setChildren(null); 
-	                 
-	               
-	            
-				parent.updateinsert(tree); 
-			}
-		}
-	}
 	
-	public void validate(Node node,BPlusTree tree) {
-		if(!node.isLeafNode()) {
-			if(((InnerNode) node).getKeys().size()==((InnerNode) node).getChildren().size()) {
-				for(int i=0;i<((InnerNode) node).getKeys().size();i++) {
-					Field k=null;
-					if(((InnerNode) node).getChildren().get(i).isLeafNode()) {
-						k=((LeafNode) ((InnerNode) node).getChildren().get(i)).getEntries().get(0).getField();
-					}
-					else{ 
-						k=((InnerNode) ((InnerNode) node).getChildren().get(i)).getKeys().get(0);
-					}
-					if(((InnerNode) node).getKeys().get(i).compare(RelationalOperator.NOTEQ, k)) {
-						((InnerNode) node).getKeys().remove(i);
-						((InnerNode) node).getKeys().add(i, k);
-						if(!node.isroot()) {
-							validate(node.getparent(),tree);
-						}
-					}
-					
-				}
-				
-			}
-			else if(node.isroot()&&((InnerNode) node).getChildren().size()>=2 ||
-					((InnerNode) node).getChildren().size()>=tree.getpi()/2
-					&& ((InnerNode) node).getChildren().size()<=tree.getpi()
-					&& ((InnerNode) node).getChildren().size()>=2) {
-				((InnerNode) node).getKeys().clear();
-				for(int i=0;i<((InnerNode) node).getChildren().size();i++) {
-					Field key=null;
-					if(((InnerNode) node).getChildren().get(i).isLeafNode()) {
-						key=((LeafNode) ((InnerNode) node).getChildren().get(i)).getEntries().get(0).getField();
-					}
-					else{ 
-						key=((InnerNode) ((InnerNode) node).getChildren().get(i)).getKeys().get(0);
-					}
-					
-					((InnerNode) node).getKeys().add(key);
-					if(!node.isroot()) {
-						validate(node.getparent(),tree);
-					}
-				}
-			}
-		}
-		
+	public ArrayList<Node> split(Node in){
+	    	
+	    	
+	    	ArrayList<Node> inners = new ArrayList<Node>();
+	    	InnerNode in1 = new InnerNode(getDegree());
+	    	InnerNode in2 = new InnerNode(getDegree());
+	    	int n;
+	    	
+	    	ArrayList<Field> k1 = new ArrayList<Field>(getDegree());
+	    	ArrayList<Field> k2 = new ArrayList<Field>(getDegree());
+	    	n = ((InnerNode) in).getKeys().size();
+	    	for(int i=0;i<n;i++) {
+	    		if(i<(n+1)/2) {
+	    			k1.add(((InnerNode) in).getKeys().get(i));
+	    		}
+	    		else {
+	    			k2.add(((InnerNode) in).getKeys().get(i));
+	    		}
+	    	}
+	    	if(n%2==1) {
+	    		k1.remove(k1.size()-1);
+	    	}
+	    	in1.setKeys(k1);
+	    	in2.setKeys(k2);
+	    	
+	    	
+	    	ArrayList<Node> c1 = new ArrayList<Node>(getDegree()+1);
+	    	ArrayList<Node> c2 = new ArrayList<Node>(getDegree()+1);
+	    	n = ((InnerNode) in).getChildren().size();
+	    	for(int i=0;i<n;i++) {
+	    		if(i<(n+1)/2) {
+	    			c1.add(((InnerNode) in).getChildren().get(i));
+	    		}
+	    		else {
+	    			c2.add(((InnerNode) in).getChildren().get(i));
+	    		}
+	    	}
+	    	in1.setChildren(c1);
+	    	in2.setChildren(c2);
+
+	    	inners.add(in1);
+	    	inners.add(in2);
+	    	return inners;
 	}
 	
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	 
-	 
+	public Node merge(Node in1){
+    	InnerNode in = new InnerNode(getDegree());
+    	ArrayList<Node> c = new ArrayList<Node>();
+    	c.addAll(((InnerNode) in1).getChildren());
+    	c.addAll(this.getChildren());
+    	in.setChildren(c);
+    	
+    	ArrayList<Field> k = new ArrayList<Field>();
+    	k.addAll(((InnerNode) in1).getKeys());
+    	if(((InnerNode) in1).getChildren().get(0).isLeafNode()) {
+    		
+    		k.add(((LeafNode)((InnerNode) in1).getChildren().get(((InnerNode) in1).getChildren().size()-1)).getEntries().get(((LeafNode)((InnerNode) in1).getChildren().get(((InnerNode) in1).getChildren().size()-1)).getEntries().size()-1).getField());
+    	}
+    	else {
+    		
+    		k.add(((InnerNode) ((InnerNode) in1).getChildren().get(((InnerNode) in1).getChildren().size()-1)).getKeys().get(((InnerNode) ((InnerNode) in1).getChildren().get(((InnerNode) in1).getChildren().size()-1)).getKeys().size()-1));
+    	}
+    	
+    	k.addAll(this.getKeys());
+    	in.setKeys(k);
+    	return in;
+    }
+	  
+	  
+	  
+	  
+
+
+
 
 	
 
+
+
+
+	
+	
+	
+	
 }
